@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: website-monitor-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      # If OPENAI_API_KEY is set on the host, it will be passed through
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./backend/data:/app/data
+
+  frontend:
+    build: ./frontend
+    container_name: website-monitor-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
