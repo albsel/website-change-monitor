@@ -1,1 +1,15 @@
-[]
+[
+    {
+      "url": "https://example.com",
+      "label": "Example Homepage"
+    },
+    {
+      "url": "https://news.ycombinator.com/",
+      "label": "Hacker News"
+    },
+    {
+      "url": "https://www.zeit.de/",
+      "label": "ZEIT Online"
+    }
+  ]
+  

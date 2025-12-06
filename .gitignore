@@ -1,0 +1,17 @@
+# Node dependencies
+node_modules/
+
+# Logs
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+
+# Editor junk
+.DS_Store
+.idea/
+.vscode/
+
+# Backend history data (runtime only – do not track)
+backend/data/history/
