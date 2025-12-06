@@ -10,10 +10,6 @@ const router = express.Router();
 router.get('/:id', (req, res, next) => {
   const { id } = req.params;
 
-  if (!id) {
-    return res.status(400).json({ error: 'Missing id parameter' });
-  }
-
   try {
     const history = readHistory(id);
 

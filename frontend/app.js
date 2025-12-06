@@ -1,6 +1,5 @@
 const API_BASE = (() => {
-    // For local dev from file:// or any host, we assume backend on localhost:3001
-    // In Docker, we'll adjust to use the backend service name.
+    // Local dev using file:// or any host → backend on localhost:3001
     return 'http://localhost:3001';
   })();
   
@@ -100,7 +99,8 @@ const API_BASE = (() => {
   
       const entry = await res.json();
       setHistoryInfo('Crawl finished. Latest change shown below.');
-      // Reload history for this URL after successful crawl
+  
+      // Reload history
       await loadHistory(id, entry.label);
     } catch (err) {
       console.error('[frontend] Crawl request failed:', err);
@@ -131,13 +131,13 @@ const API_BASE = (() => {
       }
   
       setHistoryInfo(`Showing ${history.length} change(s) for "${label || 'selected URL'}".`);
-  
       historyListEl.innerHTML = '';
   
       history.forEach((entry) => {
         const item = document.createElement('article');
         item.className = 'history-entry';
   
+        // HEADER
         const header = document.createElement('header');
         header.className = 'history-header';
   
@@ -149,13 +149,30 @@ const API_BASE = (() => {
         badge.className = 'history-badge';
         badge.textContent = entry.usedFallback ? 'Fallback' : (entry.model || 'LLM');
   
+        // Tooltip for fallback
+        if (entry.usedFallback && entry.reason) {
+          badge.title = `Reason: ${entry.reason}`;
+        }
+  
         header.appendChild(title);
         header.appendChild(badge);
   
+        // EXPLANATION
         const explanation = document.createElement('p');
         explanation.className = 'history-explanation';
         explanation.textContent = entry.explanation;
   
+        // INLINE fallback reason
+        if (entry.usedFallback && entry.reason) {
+          const reasonEl = document.createElement('div');
+          reasonEl.className = 'fallback-reason';
+          reasonEl.style.fontSize = '12px';
+          reasonEl.style.color = '#6b7280';
+          reasonEl.textContent = `Fallback reason: ${entry.reason}`;
+          item.appendChild(reasonEl);
+        }
+  
+        // META
         const meta = document.createElement('div');
         meta.className = 'history-meta';
         const lengthDiff = entry.meta?.lengthDiff ?? 0;
@@ -173,7 +190,7 @@ const API_BASE = (() => {
     }
   }
   
-  // Init on load
+  // Init
   window.addEventListener('DOMContentLoaded', () => {
     loadUrls();
   });

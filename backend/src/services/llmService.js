@@ -4,55 +4,58 @@ const { diffTexts } = require('./diffService');
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
+// Trim very large pages for stable OpenAI usage
+const MAX_CHARS = 50000;
+
 /**
  * Generate a human-readable explanation of changes between two texts.
- *
- * - Uses OpenAI if OPENAI_API_KEY is set and the API call succeeds.
- * - Falls back to internal diffSummary if the API is unavailable or fails.
+ * Uses OpenAI if possible, otherwise falls back with explicit reason.
  */
 async function generateChangeExplanation(oldText, newText) {
-  // Always compute our internal diff first
   const diffResult = diffTexts(oldText, newText);
 
-  // If there are no changes, don't even call the LLM
+  // 1) No changes at all → skip OpenAI, required behavior
   if (!diffResult.hasChanges) {
     return {
       explanation: diffResult.summary,
       usedFallback: true,
       model: null,
+      reason: 'No textual changes detected',
       meta: diffResult.meta
     };
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
 
-  // If there is no API key, we must fall back
+  // 2) No API key provided
   if (!apiKey) {
-    console.warn('[llmService] OPENAI_API_KEY not set — using fallback diff summary.');
+    console.warn('[llmService] OPENAI_API_KEY not set — using fallback.');
     return {
       explanation: diffResult.summary,
       usedFallback: true,
       model: null,
+      reason: 'OPENAI_API_KEY not set',
       meta: diffResult.meta
     };
   }
 
+  // 3) Trim very large pages (Wikipedia, BBC)
+  const oldTrimmed = (oldText || '').slice(0, MAX_CHARS);
+  const newTrimmed = (newText || '').slice(0, MAX_CHARS);
+
   try {
     const prompt = `
-You are a helpful assistant that explains changes between two versions of a web page.
+Explain the differences between two versions of a web page.
+Focus ONLY on meaningful textual changes.
+Return 3–6 short bullet points.
 
-Given the previous text and the new text, describe the main changes in a concise way.
-Focus on sections added, removed, or significantly modified.
-
-Return 3–6 bullet points, in plain text, no markdown syntax.
-
-Previous version:
+OLD:
 ---
-${oldText || '(empty)'}
+${oldTrimmed || '(empty)'}
 
-New version:
+NEW:
 ---
-${newText || '(empty)'}
+${newTrimmed || '(empty)'}
 `;
 
     const response = await axios.post(
@@ -60,14 +63,8 @@ ${newText || '(empty)'}
       {
         model: DEFAULT_MODEL,
         messages: [
-          {
-            role: 'system',
-            content: 'You explain differences between two versions of a webpage in concise bullet points.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
+          { role: 'system', content: 'You summarize textual differences between webpage versions.' },
+          { role: 'user', content: prompt }
         ],
         max_tokens: 220,
         temperature: 0.2
@@ -77,7 +74,7 @@ ${newText || '(empty)'}
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
-        timeout: 8000 // 8 seconds
+        timeout: 8000
       }
     );
 
@@ -85,11 +82,12 @@ ${newText || '(empty)'}
     const explanation = choice?.message?.content?.trim();
 
     if (!explanation) {
-      console.warn('[llmService] Empty response from OpenAI — using fallback diff summary.');
+      console.warn('[llmService] Empty OpenAI response — fallback');
       return {
         explanation: diffResult.summary,
         usedFallback: true,
         model: DEFAULT_MODEL,
+        reason: 'OpenAI returned empty response',
         meta: diffResult.meta
       };
     }
@@ -98,17 +96,19 @@ ${newText || '(empty)'}
       explanation,
       usedFallback: false,
       model: DEFAULT_MODEL,
+      reason: null,
       meta: diffResult.meta
     };
+
   } catch (err) {
-    console.error('[llmService] OpenAI call failed, using fallback diff summary:', err.message);
+    console.error('[llmService] OpenAI call failed:', err.message);
 
     return {
       explanation: diffResult.summary,
       usedFallback: true,
       model: DEFAULT_MODEL,
-      meta: diffResult.meta,
-      error: err.message
+      reason: `OpenAI error: ${err.message}`,
+      meta: diffResult.meta
     };
   }
 }

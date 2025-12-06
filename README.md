@@ -1,68 +1,116 @@
-# Website Change Monitor
-# Website Change Monitor (PoC)
+# Website Change Monitor – Proof of Concept
 
-A small proof-of-concept **website change monitor** that tracks content updates on a few URLs and uses an LLM to generate human-readable explanations of the changes.
-
-The goal is not production code, but a clean, well-structured PoC that demonstrates:
-
-- basic crawling
-- resilient error handling
-- LLM integration with fallback
-- minimal but usable frontend
-- fully dockerized setup
-
----
+Ein minimaler, vollständig containerisierter Website-Change-Monitor mit KI-gestützter Änderungsbeschreibung.
 
 ## Features
 
-- **URL management**  
-  A small JSON config (`backend/data/sites.json`) defines 3–5 URLs to monitor.  
-  Each URL is exposed as an ID via `GET /api/urls` for the frontend.
+- Webseitenliste (3–5 Seiten) als Config
+- Manuelles Crawling per Endpoint
+- KI-gestützte Änderungsbeschreibung (OpenAI) mit automatischem Fallback
+- Frontend zur Anzeige der Historie
+- Docker-Compose-Setup für sofortige Ausführung
+- Tests (Jest)
 
-- **Crawling**  
-  `POST /api/crawl`:
-  - fetches the page via `axios`
-  - extracts text using `cheerio`
-  - compares the new text with the last snapshot
+## Quick Start
 
-- **LLM-based change explanation**  
-  The backend calls the OpenAI Chat Completions API to describe the change in plain language (short bullet-style explanation).
+**Voraussetzungen:**
+- Docker + Docker Compose
+- Optional: OpenAI API Key
 
-- **Robust fallback**  
-  If the LLM is not available (no API key, timeout, network error, bad response), the app falls back to an internal diff summary from `diffService.js`.  
-  The system is always usable, with or without the LLM.
+**Starten:**
+```bash
+docker-compose up --build
+```
 
-- **History**  
-  Every crawl is stored as a JSON entry in `backend/data/history/<urlHash>.json`, including:
-  - timestamp
-  - explanation (LLM or fallback)
-  - meta (length diff, ratio)
-  - raw text snapshot
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
 
-- **Minimal frontend**  
-  A small single-page UI (static HTML + vanilla JS):
-  - shows the list of monitored URLs
-  - lets you trigger “Crawl now”
-  - displays the change history per URL
+**OpenAI aktivieren:**
+```bash
+export OPENAI_API_KEY=sk-xxxx
+```
+Ohne API-Key → automatischer Fallback (internes Diff).
 
----
+## Konfiguration
 
-## Tech Stack
+Webseiten definiert in `backend/data/sites.json`:
+```json
+[
+  { "url": "https://news.ycombinator.com/", "label": "Hacker News" },
+  { "url": "https://www.bbc.com/news", "label": "BBC News" }
+]
+```
 
-- **Backend:** Node.js, Express, axios, cheerio, Jest  
-- **Frontend:** Static HTML, vanilla JS, minimal CSS, served via nginx  
-- **LLM:** OpenAI Chat Completions API (model configurable via `OPENAI_MODEL`)  
-- **Containerization:** Docker, docker-compose
+## Architektur
 
----
+**Backend (Node.js + Express):**
+- `/api/urls` - Liste der überwachten URLs
+- `/api/crawl` - Crawling triggern (POST mit `{ id }`)
+- `/api/history/:id` - Änderungshistorie abrufen
+- Services: `fetchPage`, `llmService` (OpenAI + Fallback), `diffService`
+- Persistenz: JSON-Dateien in `backend/data/history/`
 
-## Architecture Overview
+**Frontend:**
+- Plain JS + CSS, ausgeliefert über Nginx
+- URL-Liste, Crawling-Trigger, Historie-Anzeige
 
-```text
-frontend (nginx, port 3000)  --->  backend (Node/Express, port 3001)
-                                      |
-                                      +--> axios: fetch page HTML
-                                      +--> cheerio: extract text
-                                      +--> diffService: basic diff + metadata
-                                      +--> llmService: OpenAI + fallback
-                                      +--> fileStore: JSON-based storage (sites + history)
+## Technische Entscheidungen
+
+- **Express**: Schnelle PoC-Implementierung, minimale Boilerplate
+- **Axios**: Stabileres Timeout-Handling als fetch
+- **Cheerio**: Leichtgewichtig, schnelle Text-Extraktion ohne Browser-Simulation
+- **JSON-File-Storage**: Einfache Persistenz für PoC, gut prüfbar
+- **Plain JS Frontend**: Kein Build-Schritt, Reviewer sehen Logik direkt
+
+## Fehlerbehandlung
+
+- HTTP-Fehler beim Crawling → saubere Fehlermeldungen
+- LLM-Ausfall → automatischer Fallback auf internes Diff
+- Timeouts: OpenAI 8000ms, max 50.000 Zeichen pro Text
+
+## Tests
+
+```bash
+cd backend
+npm test
+```
+
+Tests: `llmService.test.js`, `fetchPage.test.js`
+
+## KI-Einsatz
+
+Entwicklung mit KI-Tools unterstützt (ChatGPT/Claude/Cursor):
+- Architekturplanung
+- Diff-Algorithmus-Design
+- Fehlermeldungen & Timeout-Handling
+- OpenAI-Prompt-Engineering
+- Refactoring & Dokumentation
+
+KI als Pair-Programmer eingesetzt – alle Vorschläge wurden überprüft und angepasst.
+
+## Workflow
+
+1. URL auswählen
+2. "Crawl now" klicken
+3. Backend lädt HTML, extrahiert Text
+4. Diff wird berechnet
+5. LLM erstellt Änderungserklärung (oder Fallback)
+6. Ergebnis erscheint im UI
+7. Einträge gespeichert in `backend/data/history/<id>.json`
+
+## Erfüllung der Anforderungen
+
+| Anforderung | Umsetzung |
+|------------|-----------|
+| Webseiten-Verwaltung | `sites.json` + UI |
+| Crawling | POST `/api/crawl` |
+| KI-Vergleich | `llmService` mit OpenAI + Fallback |
+| Anzeige | Frontend listet URLs & Historie |
+| Docker-Compose | Single-command startup |
+| Tests | llmService + fetchPage |
+| Error Handling | HTTP-Fehler, Timeouts, Fallback |
+| KI-Dokumentation | Kapitel im README |
+
+## Lizenz
+
+MIT – frei nutzbar für i-gelb Proof-of-Concept Bewertung.
