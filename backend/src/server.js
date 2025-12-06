@@ -1,9 +1,13 @@
 const express = require('express');
+const cors = require('cors');
 const urlsRouter = require('./routes/urls');
 const crawlRouter = require('./routes/crawl');
 const historyRouter = require('./routes/history');
 
 const app = express();
+
+// Cors
+app.use(cors());
 
 // Middleware
 app.use(express.json());

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Website Change Monitor (PoC)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>Website Change Monitor</h1>
+    <p class="subtitle">
+      Simple PoC: track text changes on a few URLs and explain them with an LLM.
+    </p>
+  </header>
+
+  <main class="layout">
+    <section class="panel panel-left">
+      <h2>Monitored URLs</h2>
+      <div id="urls-list" class="urls-list">
+        <!-- Filled by app.js -->
+      </div>
+    </section>
+
+    <section class="panel panel-right">
+      <h2>Change History</h2>
+      <div id="history-info" class="history-info">
+        <p>Select a URL to view its change history.</p>
+      </div>
+      <div id="history-list" class="history-list">
+        <!-- Filled by app.js -->
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <small>PoC only – built for a coding challenge. All data stored locally in JSON files.</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
