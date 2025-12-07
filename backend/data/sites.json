@@ -1,18 +1,17 @@
 [
-    {
-      "id": "hn",
-      "url": "https://news.ycombinator.com/",
-      "label": "Hacker News"
-    },
-    {
-      "id": "bbc",
-      "url": "https://www.bbc.com/news",
-      "label": "BBC News"
-    },
-    {
-      "id": "wiki-ai",
-      "url": "https://en.wikipedia.org/wiki/Artificial_intelligence",
-      "label": "Wikipedia – AI"
-    }
-  ]
-  
+  {
+    "id": "hn",
+    "url": "https://news.ycombinator.com/",
+    "label": "Hacker News"
+  },
+  {
+    "id": "bbc",
+    "url": "https://www.bbc.com/news",
+    "label": "BBC News"
+  },
+  {
+    "id": "wiki-ai",
+    "url": "https://en.wikipedia.org/wiki/Artificial_intelligence",
+    "label": "Wikipedia – AI"
+  }
+]
